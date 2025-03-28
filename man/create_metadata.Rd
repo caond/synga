@@ -19,7 +19,7 @@ This function generates a structure definition for a given data frame (\code{df}
 It automatically detects column types and allows for manual overrides.
 }
 \examples{
-ed_struct <- create_metadata(ed, 
+ed_struct <- create_metadata(ed,
   overrides = list(
     establishment_code = "factor",
     arrival_datetime = "datetime",

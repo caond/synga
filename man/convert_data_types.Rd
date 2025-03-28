@@ -4,12 +4,12 @@
 \alias{convert_data_types}
 \title{Convert Data Types in a Data Frame}
 \usage{
-convert_data_types(df, df_struct)
+convert_data_types(df, metadata)
 }
 \arguments{
 \item{df}{A data frame whose columns data type need to be converted}
 
-\item{df_struct}{A reference data frame structure containing column names (\code{col_names})
+\item{metadata}{A reference data frame structure containing column names (\code{col_names})
 and their corresponding data types (\code{col_type}).}
 }
 \value{
@@ -17,7 +17,7 @@ A data frame with standardized column data types.
 }
 \description{
 This function ensures that the columns in a given data frame (\code{df}) are converted
-to the appropriate data types based on a reference structure (\code{df_struct}).
+to the appropriate data types based on a reference structure (\code{metadata}).
 }
 \examples{
 df <- data.frame(
@@ -25,11 +25,11 @@ df <- data.frame(
   timestamp = c("01/01/2023 12:00:00", "02/01/2023 14:30:00",
                 "03/01/2023 09:45:00", "04/01/2023 16:20:00")
 )
-df_struct <- data.frame(
+metadata <- data.frame(
   col_names = c("category", "timestamp"),
   col_type = c("factor", "datetime")
 )
-df_converted <- convert_data_types (df, df_struct)
+df_converted <- convert_data_types (df, metadata)
 
 }
 \keyword{internal}

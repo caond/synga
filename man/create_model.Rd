@@ -9,7 +9,7 @@ create_model(df, data_type)
 \arguments{
 \item{df}{A data frame containing the original dataset to be processed.}
 
-\item{data_type}{A named list specifying column data type overrides: factor, datetime, integer, numeric}
+\item{data_type}{A named list specifying column data type overrides: factor, datetime, date, integer, numeric, text, key}
 }
 \value{
 A list containing the following components:
@@ -30,6 +30,8 @@ fits empirical CDFs, and transforms the data into a uniform \link{0, 1} space.
 library(synga)
 ed_model <- create_model(ed,
   data_type<-list(
+           event_id="key",
+           patient_name="text",
            establishment_code = "factor",
            arrival_datetime = "datetime",
            sex = "factor",
