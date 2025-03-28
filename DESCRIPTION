@@ -1,0 +1,30 @@
+Package: synga
+Title: Generating Synthetic Data For Health Data
+Version: 18.03.2025.1
+Authors@R: 
+    person("Cao", "Nguyen", , "cao.nguyen@health.wa.gov.au", role = c("aut", "cre"))
+Description: Generating Synthetic Data For Health Data Using Genetic Algorithm
+License: `use_mit_license()`
+Encoding: UTF-8
+Roxygen: list(markdown = TRUE)
+RoxygenNote: 7.2.3
+Depends: 
+    R (>= 3.5)
+LazyData: true
+Imports:
+    lubridate,
+    copula,
+    transport,
+    dplyr,
+    magrittr, 
+    MASS,
+    foreach,
+    parallel,
+    doParallel,
+    matrixcalc,
+    digest,
+    pROC
+Suggests: 
+    knitr,
+    rmarkdown
+VignetteBuilder: knitr
