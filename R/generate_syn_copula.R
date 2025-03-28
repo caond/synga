@@ -28,11 +28,11 @@ generate_syn_copula <- function(data_model, n_samples = NA) {
 
   # Fit Gaussian Copula Model
   cor_matrix <- cor(data_model$data_uniform, use = "pairwise.complete.obs")
-  gaussian_cop <- normalCopula(param = cor_matrix[lower.tri(cor_matrix)],
+  gaussian_cop <- copula::normalCopula(param = cor_matrix[lower.tri(cor_matrix)],
                                  dim = ncol(data_model$data_uniform),
                                  dispstr = "un")
-  fit <- fitCopula(gaussian_cop, as.matrix(data_model$data_uniform))
-  synthetic_uniform <- rCopula(n_samples, fit@copula)
+  fit <- copula::fitCopula(gaussian_cop, as.matrix(data_model$data_uniform))
+  synthetic_uniform <- copula::rCopula(n_samples, fit@copula)
 
   # Convert synthetic data to a data frame
   synthetic_uniform <- as.data.frame(synthetic_uniform)
