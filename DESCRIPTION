@@ -16,6 +16,7 @@ Imports:
     copula,
     transport,
     dplyr,
+    ggplot2,
     magrittr, 
     MASS,
     foreach,

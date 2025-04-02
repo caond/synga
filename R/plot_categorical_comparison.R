@@ -1,0 +1,59 @@
+#' plot_categorical_comparison Function: Plots bar charts for categorical data
+#'
+#' This function generates two bar plots side by side:
+#' one for the original dataset and one for the synthetic dataset.
+#' It normalizes the frequency counts to proportions and adds a legend for categories.
+#'
+#' @param org A categorical variable from the original dataset (vector).
+#' @param syn A categorical variable from the synthetic dataset (vector).
+#' @param col A string representing the column name being plotted.
+#'
+#' @return Two bar plots: One for the original dataset and one for the synthetic dataset.
+#'         The function does not return a value but generates visual output.
+#'
+#' @examples
+#' original_data <- sample(c("A", "B", "C"), 100, replace = TRUE)
+#' synthetic_data <- sample(c("A", "B", "C"), 100, replace = TRUE)
+#' plot_categorical_comparison(original_data, synthetic_data, "Category")
+#'
+#' @keywords internal
+plot_categorical_comparison<-function(org,syn,col){
+  # 1. Frequency tables
+  freq_org <- table(org)
+  freq_syn <- table(syn)
+
+  # 2. All unique categories
+  all_levels <- union(names(freq_org), names(freq_syn))
+
+  # 3. Fill in missing categories
+  prop_org <- freq_org[all_levels] / length(org)
+  prop_syn <- freq_syn[all_levels] / length(syn)
+  prop_org[is.na(prop_org)] <- 0
+  prop_syn[is.na(prop_syn)] <- 0
+
+  # 4. Combine into data frame for ggplot
+  plot_data <- data.frame(
+    Category = rep(all_levels, 2),
+    Group = c(rep("Original", length(all_levels)),rep("Synthetic", length(all_levels))),
+    Proportion = c(as.numeric(prop_org), as.numeric(prop_syn))
+  )
+
+  # 5. Calculate S_pMSE for title
+  spmse <- round(calculate_S_pMSE(org, syn), 3)
+
+  # 6. Plot with ggplot2
+  p<-ggplot2::ggplot(plot_data, aes(x = Category, y = Proportion, fill = Group)) +
+    geom_bar(stat = "identity", position = position_dodge()) +
+    labs(
+      title = paste0(col, ": S_pMSE = ", spmse),
+      y = "Proportion", x = NULL
+    ) +
+    scale_fill_manual(values = c("steelblue", "tomato")) +
+    theme_minimal(base_size = 13)+
+    theme(
+      axis.text.x = element_text(angle = 45, hjust = 1)
+    )
+
+  return(p)
+}
+
