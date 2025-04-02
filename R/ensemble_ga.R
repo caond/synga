@@ -37,7 +37,6 @@
 #'
 
 ensemble_ga <- function(data_model, df1, df2, GENERATIONS=1000, distance = 'frobenius') {
-  EPISLON <- 1e-10
   POPULATION_SIZE <- 100
   EARLY_STOP_GENERATION<-10
   MUTATION_RATE <- 0.1
@@ -60,7 +59,7 @@ ensemble_ga <- function(data_model, df1, df2, GENERATIONS=1000, distance = 'frob
   df_df1 <- selected_distance_function(df_n,df1_n)
   df_df2 <- selected_distance_function(df_n,df2_n)
   # Compute weights based on distances
-  weights <- 1 / (EPISLON + c(df_df1, df_df2))
+  weights <- 1 / (EPS + c(df_df1, df_df2))
   weights <- weights / sum(weights)
   w1 <- weights[1]
   w2 <- weights[2]

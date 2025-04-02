@@ -24,6 +24,8 @@
 #' @keywords internal
 auc_distance<-function(df1,df2){
 
+    df1<-df1[complete.cases(df1),]
+    df2<-df2[complete.cases(df2),]
     X <-as.matrix(bind_rows(
       df1,
       df2

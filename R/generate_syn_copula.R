@@ -24,21 +24,49 @@
 #' @export
 generate_syn_copula <- function(data_model, n_samples = NA) {
 
-  if(is.na(n_samples)) n_samples<-NROW(data_model$original)
+  if (is.na(n_samples)) n_samples <- NROW(data_model$original)
 
-  # Fit Gaussian Copula Model
-  cor_matrix <- cor(data_model$data_uniform, use = "pairwise.complete.obs")
-  gaussian_cop <- copula::normalCopula(param = cor_matrix[lower.tri(cor_matrix)],
-                                 dim = ncol(data_model$data_uniform),
-                                 dispstr = "un")
-  fit <- copula::fitCopula(gaussian_cop, as.matrix(data_model$data_uniform))
+  # Step 1: Detect constant columns
+  is_constant <- apply(data_model$data_uniform, 2, function(col) {
+    length(unique(na.omit(col))) == 1
+  })
+
+  # Step 2: Remove constant columns temporarily
+  data_uniform_reduced <- data_model$data_uniform[, !is_constant, drop = FALSE]
+
+  # Step 3: Fit Gaussian Copula to reduced data
+  cor_matrix <- cor(data_uniform_reduced, use = "pairwise.complete.obs")
+
+  # Handle NA or ill-conditioned correlation matrix
+  if (anyNA(cor_matrix)) stop("Correlation matrix contains NA values. Check data.")
+
+  gaussian_cop <- copula::normalCopula(
+    param = cor_matrix[lower.tri(cor_matrix)],
+    dim = ncol(data_uniform_reduced),
+    dispstr = "un"
+  )
+
+  # Use complete cases only for copula fitting
+  complete_data <- na.omit(as.matrix(data_uniform_reduced))
+  fit <- copula::fitCopula(gaussian_cop, complete_data)
+
+  # Step 4: Sample synthetic data in uniform space
   synthetic_uniform <- copula::rCopula(n_samples, fit@copula)
-
-  # Convert synthetic data to a data frame
   synthetic_uniform <- as.data.frame(synthetic_uniform)
+  colnames(synthetic_uniform) <- colnames(data_uniform_reduced)
 
-  # Assign column names to match the input dataset
-  colnames(synthetic_uniform) <-  colnames(data_model$data_uniform)
+  # Step 5: Add back constant columns
+  const_values <- sapply(data_model$data_uniform[, is_constant, drop = FALSE], function(col) unique(na.omit(col)))
+  const_matrix <- as.data.frame(matrix(rep(const_values, each = n_samples), nrow = n_samples))
+  colnames(const_matrix) <- names(const_values)
 
-  return(convert_back_original(data_model,synthetic_uniform))
+  # Step 6: Combine and restore original column order
+  synthetic_uniform_full <- cbind(synthetic_uniform, const_matrix)
+  synthetic_uniform_full <- synthetic_uniform_full[, colnames(data_model$data_uniform)]
+
+
+
+
+
+  return(convert_back_original(data_model,synthetic_uniform_full))
 }

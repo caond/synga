@@ -38,11 +38,11 @@ convert_data_types <- function(df, metadata) {
     # Convert datetime columns to numeric POSIX timestamp
     if (col_type == "datetime") {
       #df[[col_name]] <- as.numeric(as.POSIXct(df[[col_name]], format = "%d/%m/%Y %H:%M:%OS"))
-      df[[col_name]] <-as.POSIXct(df[[col_name]], format = "%d/%m/%Y %H:%M:%OS")
+      df[[col_name]] <-as.POSIXct(df[[col_name]], tryFormats = c("%d/%m/%Y %H:%M:%OS","%Y-%m-%d %H:%M:%OS"))
     }
     if (col_type == "date") {
       #df[[col_name]] <- as.numeric(as.POSIXct(df[[col_name]], format = "%d/%m/%Y %H:%M:%OS"))
-      df[[col_name]] <-as.POSIXct(df[[col_name]], format = "%d/%m/%Y")
+      df[[col_name]] <-as.POSIXct(df[[col_name]], tryFormats = c("%d/%m/%Y", "%Y-%m-%d"))
     }
   }
 

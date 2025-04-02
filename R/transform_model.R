@@ -32,7 +32,7 @@ transform_model <- function(df, metadata) {
 
     # Extract the column data
     col <- df[[col_name]]
-
+    if (length(which(!is.na(col)))<2) error(paste0(col_nname,' has too many NAs values, stop!'))
     # Apply ECDF transformation based on column type
     if (col_type != "factor") {
       best_fit <- find_best_transform(as.numeric(col))  # fit the best distribution or Standard ECDF for numerical data
@@ -40,7 +40,7 @@ transform_model <- function(df, metadata) {
       fun <- ecdf_categorical(col)  # Custom ECDF for categorical data
       # Apply the ECDF function to transform data into a uniform distribution [0,1]
       transformed<-fun(col)
-      best_fit<-list(method="ecdf_category",fun=fun,transformed=transformed)
+      best_fit<-list(method="ecdf_category",params=fun,transformed=transformed)
     }
 
     # Store the transform function

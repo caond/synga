@@ -6,7 +6,7 @@
 #' @keywords internal
 .onLoad <- function(libname, pkgname) {
   #library(dplyr)
-
+  EPS<<-1e-6
   distance_functions <<- list(
     wasserstein = wasserstein_distance_costm,
     frobenius = frobenius_distance,

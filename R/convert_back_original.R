@@ -16,6 +16,21 @@
 #' @keywords internal
 convert_back_original <- function(data_model,synthetic_uniform) {
 
+   # if NA values exist in the uniform, i.e. the model is created with na.rm=TRUE
+   # na_probs <- colMeans(is.na(data_model$data_uniform))
+   #
+   # for (col in names(na_probs)) {
+   #   prob <- na_probs[[col]]
+   #   if (prob > 0) {
+   #     n_na <- rbinom(1, n_samples, prob)  # sample number of NAs
+   #     na_indices <- sample(n_samples, n_na)
+   #     synthetic_uniform[[col]][na_indices] <- NA
+   #   }
+   # }
+
+
+
+
   # Convert synthetic data back to the original scale
   synthetic_data <- as.data.frame(setNames(lapply(data_model$metadata$col_names, function(col_name) {
 
@@ -31,34 +46,98 @@ convert_back_original <- function(data_model,synthetic_uniform) {
     }else if (col_type == 'factor') {
       # For categorical variables, use the inverse ECDF function to map probabilities back to categories
       message(paste0(col_name,":","Using ECDF category inverse transformation"))
-      fun <- attr(data_model$transformed[[col_name]]$fun, 'inverse')
-      ret <- factor(fun(synthetic_uniform[, col_name]),levels=levels(data_model$data_converted[,col_name]))
+      inverse <- attr(data_model$transformed[[col_name]]$params, 'inverse')
+      ret <- factor(inverse(synthetic_uniform[, col_name]),levels=levels(data_model$data_converted[,col_name]))
 
     } else {
 
       method<-data_model$transformed[[col_name]]$method
       # For continuous/numeric variables
-      if (method == "ecdf") {
+      if (method == "ecdf_numeric") {
         message(paste0(col_name,":","Using ECDF inverse transformation"))
         #use quantile function for inverse transformation
-        ret <- quantile( data_model$data_converted[, col_name], synthetic_uniform[, col_name])
-
+        #ret <- quantile( data_model$data_converted[, col_name], synthetic_uniform[, col_name],na.rm=TRUE)
+        inverse <- attr(data_model$transformed[[col_name]]$params, 'inverse')
+        ret <-inverse(synthetic_uniform[, col_name])
       }else if (method == "beta") {
+
         message(paste0(col_name,":","Using Beta inverse transformation"))
         params<-data_model$transformed[[col_name]]$params
-        x_scaled <-qbeta( synthetic_uniform[, col_name],params$shape1, params$shape2)
-        ret<-params$min_x + x_scaled*(params$max_x - params$min_x)
+
+        shape1 <- params$shape1
+        shape2 <- params$shape2
+        min_x <- params$min_x
+        max_x <- params$max_x
+        p_na   <- params$p_na
+
+        range_x <- max_x - min_x
+
+        ret<-sapply(synthetic_uniform[, col_name], function(prob) {
+          if (is.na(prob) || prob < 0 || prob > 1) return(NA)
+
+          # If the prob falls in the "missingness" mass, return NA
+          if (prob <= p_na) return(NA)
+
+          # Rescale prob to [0, 1] for beta inversion
+          prob_rescaled <- (prob - p_na) / (1 - p_na)
+
+          # Optional safety clamp
+          prob_rescaled <- pmin(pmax(prob_rescaled, EPS), 1 - EPS)
+
+          # Inverse beta CDF and rescale to original range
+          x_scaled <- qbeta(prob_rescaled, shape1, shape2)
+          return(x_scaled * (range_x + eps) + min_x)
+        })
+
 
       }else if (method == "normal") {
+
         message(paste0(col_name,":","Using Normal inverse transformation"))
         params<-data_model$transformed[[col_name]]$params
-        ret<-qnorm(synthetic_uniform[, col_name], params$mean, params$sd)
+        mean_x <- params$mean
+        sd_x   <- params$sd
+        p_na   <- params$p_na
+
+        ret<-sapply(synthetic_uniform[, col_name], function(prob) {
+          if (is.na(prob) || prob < 0 || prob > 1) return(NA)
+          if (prob <= p_na) return(NA)
+
+          prob_rescaled <- (prob - p_na) / (1 - p_na)
+
+          # Optional clamp to avoid extreme edges
+          prob_rescaled <- pmin(pmax(prob_rescaled, EPS), 1 - EPS)
+
+          return(qnorm(prob_rescaled, mean_x, sd_x))
+        })
+
+
 
       }else if (method == "gamma") {
+
         message(paste0(col_name,":","Using Gamma inverse transformation"))
         params<-data_model$transformed[[col_name]]$params
-        x_shifted <- qgamma(synthetic_uniform[, col_name], params$shape, params$rate)
-        ret<- x_shifted - params$shift
+
+        shape <- params$shape
+        rate  <- params$rate
+        shift <- params$shift
+        p_na  <- params$p_na
+
+        ret<-sapply(synthetic_uniform[, col_name], function(prob) {
+          if (is.na(prob) || prob < 0 || prob > 1) return(NA)
+          if (prob <= p_na) return(NA)
+
+          prob_rescaled <- (prob - p_na) / (1 - p_na)
+
+          # Clamp to avoid qgamma(0) or qgamma(1)
+          prob_rescaled <- pmin(pmax(prob_rescaled, EPS), 1 - EPS)
+
+          x_shifted <- qgamma(prob_rescaled, shape, rate)
+          return(x_shifted - shift)  # remove shift
+        })
+
+
+
+
       } else {
         stop(paste0(col_name,":","Unknown transformation method"))
       }
@@ -75,6 +154,7 @@ convert_back_original <- function(data_model,synthetic_uniform) {
     # If column type is datetime, convert from numeric (POSIXct format)
     if (col_type %in% c('date','datetime')) {
       ret <- as.POSIXct(ret, origin = "1970-01-01")
+      if (col_type=='date') ret<-as.Date(ret)
     }
 
     # Return the transformed column

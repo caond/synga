@@ -78,9 +78,9 @@ compare_dist <- function(data_model, synthetic_data) {
         day_names <- c("Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun")
         bar_plot(factor(substr(weekdays(original_dt), 1, 3), levels = day_names),
                  factor(substr(weekdays(synthetic_dt), 1, 3), levels = day_names), paste0('Day-', col))
-        hist(as.integer(difftime(Sys.Date(), original_dt, units = "days") / 365.25),
+        hist(year(original_dt),
              main = paste0("Original Year ", col), xlab = col, col = "blue", freq = FALSE)
-        hist(as.integer(difftime(Sys.Date(), synthetic_dt, units = "days") / 365.25),
+        hist(year(synthetic_dt),
              main = paste0("Synthetic Year ", col), xlab = col, col = "red", freq = FALSE)
         idx <- idx + 3  # 3 plots used
       }

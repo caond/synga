@@ -33,15 +33,19 @@
 #' )
 #'
 #' @export
-create_model <- function(df, data_type) {
+create_model <- function(df, data_type,na.rm=FALSE) {
   allowed_types <- c("factor", "date","datetime", "date", "integer", "numeric", "text", "key")
   invalid_types <- unlist(data_type)[!unlist(unlist(data_type)) %in% allowed_types]
   if (length(invalid_types) > 0) {
       stop(paste("Error: data types should be one of the followings:", paste(allowed_types, collapse = ", ")))
   }
 
-  # make sure the data is complete
-  df <- df[complete.cases(df), ]
+
+  if (na.rm)
+  {
+    # make sure the data is complete
+    df <- df[complete.cases(df), ]
+  }
 
   # Step 1: Create metadata describing column types, with user-specified overrides.
   metadata <- create_metadata(df, overrides = data_type)
@@ -51,6 +55,28 @@ create_model <- function(df, data_type) {
 
   # Step 2: Convert data types based on the generated metadata.
   data_converted <- convert_data_types(df, metadata)
+  # missing_models <- list()
+  # if (!na.rm)
+  # {
+  #   # create missing value model to mimic missing values
+  #   na_rates <- colMeans(is.na(data_model$data_converted))
+  #   na_order <- names(sort(na_rates))
+  #   complete_rows<-complete.cases(data_model$data_converted)
+  #   data_converted_completed<-data_converted[complete_rows,]
+  #   for (col in na_order) {
+  #     na_mask <- is.na(data_model$data_converted[[col]])
+  #     if (mean(na_mask) == 0) next  # skip if fully observed
+  #
+  #     predictors <- data_converted[complete_rows, setdiff(colnames(data_model$data_converted), col)]
+  #     target <- is.na(data_model$data_converted[[col]])[complete_rows]
+  #
+  #     model <- glm(target ~ ., data = predictors, family = "binomial")
+  #     missing_models[[col]] <- model
+  #
+  #   }
+  #
+  # }
+
 
   # Step 3: checksum
   checksums <- apply(data_converted, 1, function(row) digest::digest(paste(row, collapse = ""), algo = "md5"))
@@ -72,5 +98,7 @@ create_model <- function(df, data_type) {
     transformed = transformed,
     checksums=checksums,
     data_uniform = data_uniform
+    #missing_models=missing_models,
+    #na_order=na_order
   ))
 }

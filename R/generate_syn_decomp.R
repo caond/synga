@@ -38,9 +38,14 @@
 #' @export
 generate_syn_decomp <- function(data_model, n_samples = NA) {
   if (is.na(n_samples)) n_samples <- NROW(data_model$original)
+  # Detect columns with 0 variance (only 1 unique value after removing NAs)
+  is_constant <- apply(data_model$data_uniform, 2, function(col) {
+    length(unique(na.omit(col))) == 1
+  })
 
-  epsilon <- 1e-10
-  cdf_data <- pmin(pmax(as.matrix(data_model$data_uniform), epsilon), 1 - epsilon)
+  data_uniform_reduced <- data_model$data_uniform[, !is_constant, drop = FALSE]
+
+  cdf_data <- pmin(pmax(as.matrix(data_uniform_reduced), EPS), 1 - EPS)
   z_data <- apply(cdf_data, 2, qnorm)
   cor_norm <- cor(z_data, use = "pairwise.complete.obs")
 
@@ -54,34 +59,21 @@ generate_syn_decomp <- function(data_model, n_samples = NA) {
   sds[cats] <- 1
   means <- colMeans(z_data, na.rm = TRUE)
   means[cats] <- 0
-  random_noise <- matrix(rnorm(n_samples * ncol(data_model$data_uniform)), n_samples, ncol(data_model$data_uniform))
+  random_noise <- matrix(rnorm(n_samples * ncol(data_uniform_reduced)), n_samples, ncol(data_uniform_reduced))
 
   # Checks for conditions to use eigen decomposition
   use_eigen <- FALSE
 
-  # 1. Check for numerical stability (condition number)
-  condition_number <- kappa(cor_norm) # Calculate condition number
-  if (condition_number > 1e10) { # Adjust threshold as needed
+  # Better matrix diagnostics
+  if (kappa(cor_norm) > 1e6) {
     use_eigen <- TRUE
-    warning("High condition number detected. Using eigen decomposition.")
-  }
-
-  # 2. Check for large matrix size
-  if (nrow(cor_norm) > 500) { # Adjust threshold as needed.
+    warning("High condition number")
+  } else if (nrow(cor_norm) > 500) {
     use_eigen <- TRUE
-    warning("Large correlation matrix detected. Using eigen decomposition.")
-  }
-
-  # 3. Check if matrix is close to singular (small determinant)
-  if (abs(det(cor_norm)) < 1e-10) { # Adjust threshold as needed
+    warning("Large correlation matrix")
+  } else if (!matrixcalc::is.positive.definite(cor_norm)) {
     use_eigen <- TRUE
-    warning("Correlation matrix is close to singular. Using eigen decomposition.")
-  }
-
-  # 4. Check if matrix is still not positive definite (even after nearPD)
-  if (!matrixcalc::is.positive.definite(cor_norm)) {
-    use_eigen <- TRUE
-    warning("Correlation matrix is still not positive definite after nearPD. Using eigen decomposition.")
+    warning("Correlation matrix is not positive definite")
   }
 
   if (use_eigen) {
@@ -99,9 +91,16 @@ generate_syn_decomp <- function(data_model, n_samples = NA) {
     synthetic_z_data <- t(t(m_chol) %*% t(random_noise) * sds + means)
   }
 
+  const_values <- sapply(data_model$data_uniform[, is_constant, drop = FALSE], function(col) unique(na.omit(col)))
+  const_matrix <- as.data.frame(matrix(rep(const_values, each = n_samples), nrow = n_samples))
+  colnames(const_matrix) <- names(const_values)
+
   synthetic_uniform <- apply(synthetic_z_data, 2, pnorm)
   synthetic_uniform <- as.data.frame(synthetic_uniform)
-  colnames(synthetic_uniform) <- colnames(data_model$data_uniform)
+  colnames(synthetic_uniform) <- colnames(data_uniform_reduced)
+  synthetic_uniform_full <- cbind(synthetic_uniform, const_matrix)
+  synthetic_uniform_full <- synthetic_uniform_full[, colnames(data_model$data_uniform)]
 
-  return(convert_back_original(data_model,synthetic_uniform))
+
+  return(convert_back_original(data_model,synthetic_uniform_full))
 }

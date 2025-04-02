@@ -19,61 +19,128 @@
 #' print(best_fit$method)  # Output: "gamma", "beta", "normal", or "ecdf"
 #' @importFrom fitdistrplus fitdist
 find_best_transform <- function(x) {
-  eps <- 1e-6  # Small constant to avoid division by zero
+
   methods <- list(
     beta = function(x) {
 
-      x_scaled <- (x - min(x)) / (max(x) - min(x) + eps)  # Scale to (0,1)
+      idx <- !is.na(x)
+      x_non_na <- x[idx]
 
-      fit <- try(fitdistrplus::fitdist(x_scaled, "beta"), silent = TRUE)
+      # Basic checks
+      if (length(x_non_na) < 5) return(NULL)
+
+      min_x <- min(x_non_na)
+      max_x <- max(x_non_na)
+      range_x <- max_x - min_x
+      if (range_x < eps) return(NULL)
+
+      # Scale to (0, 1)
+      x_scaled <- (x_non_na - min_x) / (range_x + eps)
+
+      # Add artificial endpoints to help qbeta stay close to min/max
+      x_scaled_fit <- c(0, 1, x_scaled)
+
+      # Fit Beta distribution
+      fit <- try(fitdistrplus::fitdist(x_scaled_fit, "beta"), silent = TRUE)
       if (inherits(fit, "try-error")) return(NULL)
-      transformed<- pbeta(x_scaled, fit$estimate["shape1"], fit$estimate["shape2"])
-      ks_stat <- ks.test(transformed, "punif")$statistic
 
+      shape1 <- fit$estimate["shape1"]
+      shape2 <- fit$estimate["shape2"]
+      p_na <- mean(is.na(x))
+
+      # Transform non-NA values
+      transformed <- rep(NA_real_, length(x))
+      transformed[idx] <- p_na + (1 - p_na) * pbeta(x_scaled, shape1, shape2)
+
+      # Encode NA as exactly p_na in uniform space (fixed, reserved slice)
+      transformed[!idx] <- p_na
+
+      # Return model info and transform
       list(
         method = "beta",
-        params = list(shape1 = fit$estimate["shape1"], shape2 = fit$estimate["shape2"],
-                      min_x = min(x), max_x = max(x)),  # Store original min/max for inverse transform
-        transformed=transformed,
+        transformed = transformed,
+        params = list(
+          shape1 = shape1,
+          shape2 = shape2,
+          min_x = min_x,
+          max_x = max_x,
+          p_na   = p_na
+        ),
         aic = fit$aic,
-        ks=ks_stat
+        ks  = ks.test(pbeta(x_scaled, shape1, shape2), "punif")$statistic
       )
+
     },
     normal = function(x) {
-      fit <- try(fitdistrplus::fitdist(x, "norm"), silent = TRUE)
-      if (inherits(fit, "try-error")) return(NULL)
-      transformed <- pnorm(x, fit$estimate["mean"], fit$estimate["sd"])
-      ks_stat <- ks.test(transformed, "punif")$statistic
+      idx <- !is.na(x)
+      x_non_na <- x[idx]
 
+      # Basic checks
+      if (length(x_non_na) < 5) return(NULL)
+
+      mean_x <- mean(x_non_na)
+      sd_x   <- sd(x_non_na)
+      if (sd_x < eps) return(NULL)  # Flat data
+
+      p_na <- mean(is.na(x))
+
+      # Transform
+      transformed <- rep(NA_real_, length(x))
+      transformed[idx] <- p_na + (1 - p_na) * pnorm(x[idx], mean_x, sd_x)
+      transformed[!idx] <- p_na  # encode missing at exact p_na
+
+      # Return model and metadata
       list(
         method = "normal",
-        params = list(mean = fit$estimate["mean"], sd = fit$estimate["sd"]),
         transformed = transformed,
-        aic = fit$aic,
-        ks = ks_stat
+        params = list(
+          mean = mean_x,
+          sd   = sd_x,
+          p_na = p_na
+        ),
+        aic = NA,  # optional: not using AIC here
+        ks  = ks.test(pnorm(x_non_na, mean_x, sd_x), "punif")$statistic
       )
     },
     gamma = function(x) {
-      if (any(x <= 0)) {  # Shift if data contains non-positive values
-        shift <- abs(min(x)) + eps  # Small shift to make all values positive
-        x_shifted <- x + shift
-      } else {
-        shift <- 0
-        x_shifted <- x
+      idx <- !is.na(x)
+      x_non_na <- x[idx]
+      p_na <- mean(is.na(x))
+
+      if (length(x_non_na) < 5) return(NULL)
+
+      # Gamma requires positive values → shift if needed
+      shift <- 0
+      if (min(x_non_na) <= 0) {
+        shift <- abs(min(x_non_na)) + eps
+        x_non_na <- x_non_na + shift
       }
 
-      fit <- try(fitdistrplus::fitdist(x_shifted, "gamma"), silent = TRUE)
+      # Fit gamma distribution
+      fit <- try(fitdistrplus::fitdist(x_non_na, "gamma"), silent = TRUE)
       if (inherits(fit, "try-error")) return(NULL)
 
-      transformed <- pgamma(x_shifted, fit$estimate["shape"], fit$estimate["rate"])
-      ks_stat <- ks.test(transformed, "punif")$statistic
+      shape <- fit$estimate["shape"]
+      rate  <- fit$estimate["rate"]
+
+      # Transform
+      transformed <- rep(NA_real_, length(x))
+      x_shifted <- x + shift  # apply shift to full x
+
+      transformed[idx] <- p_na + (1 - p_na) * pgamma(x_shifted[idx], shape, rate)
+      transformed[!idx] <- p_na  # encode NA at fixed point
 
       list(
         method = "gamma",
-        params = list(shape = fit$estimate["shape"], rate = fit$estimate["rate"], shift = shift),
         transformed = transformed,
+        params = list(
+          shape = shape,
+          rate  = rate,
+          shift = shift,
+          p_na  = p_na
+        ),
         aic = fit$aic,
-        ks = ks_stat
+        ks  = ks.test(pgamma(x_non_na, shape, rate), "punif")$statistic
       )
     }
   )
@@ -81,31 +148,33 @@ find_best_transform <- function(x) {
   best_fit <- NULL
   best_ks <- Inf
   best_aic <- Inf
+  x_non_na <- x[!is.na(x)]
+  if (length(x_non_na)>5){
+    for (m in names(methods)) {
 
-  for (m in names(methods)) {
-    res <- methods[[m]](x)
-    if (is.null(res)) next  # Skip if fitting failed
+      res <- methods[[m]](x)
+      if (is.null(res)) next  # Skip if fitting failed
 
-    # Prioritize lowest KS statistic, use AIC as a tiebreaker
-    if (res$ks < best_ks || (res$ks == best_ks && res$aic < best_aic)) {
-      best_ks <- res$ks
-      best_aic <- res$aic
-      best_fit <- res
+      # Prioritize lowest KS statistic, use AIC as a tiebreaker
+      if (res$ks < best_ks || (res$ks == best_ks && res$aic < best_aic)) {
+        best_ks <- res$ks
+        best_aic <- res$aic
+        best_fit <- res
+      }
     }
   }
 
-
   # Fit ECDF and compute KS statistic
-  ecdf_fit <- ecdf(x)
-  ecdf_transformed <- ecdf_fit(x)
+  fun <- ecdf_numeric(x)
+  ecdf_transformed <- fun(x)
   ecdf_ks <- ks.test(ecdf_transformed, "punif")$statistic
 
 
   # If no parametric model fits well, use ECDF
-  if (is.null(best_fit)|| ecdf_ks < best_ks ) {
+  if (length(x_non_na)/length(x)<0.7 || length(x_non_na)<30 || is.null(best_fit)|| ecdf_ks < best_ks ) {
     best_fit <- list(
-      method = "ecdf",
-      params = ecdf_fit,
+      method = "ecdf_numeric",
+      params = fun,
       transformed =ecdf_transformed,
       ks = ecdf_ks,
       aic = NA
