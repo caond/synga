@@ -39,7 +39,7 @@ plot_numeric_histogram_comparison <- function(org, syn, col) {
   x_breaks <- pretty(df$value, n = 10)
   # Create ggplot histogram
   p <- ggplot(df, aes(x = value, fill = source)) +
-    geom_histogram(aes(y = ..density..), position = "identity", alpha = 1, bins = bins) +
+    geom_histogram(aes(y = ..density..), position =  position_dodge(), alpha = 1, bins = bins) +
     scale_fill_manual(values = c("steelblue", "tomato")) +
     scale_x_continuous(breaks = x_breaks)+
     labs(

@@ -68,11 +68,12 @@ compare_dist <- function(data_model, synthetic_data) {
 
         readline("Press [Enter] to continue..."); if (.Platform$GUI != "RStudio") dev.new()
 
-        print(plot_categorical_comparison(
+        print(plot_numeric_histogram_comparison(
           as.integer(format(data_converted_dt, "%H")),
           as.integer(format(synthetic_dt, "%H")),
           paste0("Hour-", col)
         ))
+        readline("Press [Enter] to continue..."); if (.Platform$GUI != "RStudio") dev.new()
       }
 
       if (col_type == "date") {
@@ -100,6 +101,7 @@ compare_dist <- function(data_model, synthetic_data) {
           year(synthetic_dt),
           paste0("Year of ", col)
         ))
+        readline("Press [Enter] to continue..."); if (.Platform$GUI != "RStudio") dev.new()
       }
 
       if (col_type %in% c("integer", "numeric")) {
