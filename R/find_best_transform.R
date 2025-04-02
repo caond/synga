@@ -32,10 +32,10 @@ find_best_transform <- function(x) {
       min_x <- min(x_non_na)
       max_x <- max(x_non_na)
       range_x <- max_x - min_x
-      if (range_x < eps) return(NULL)
+      if (range_x < EPS) return(NULL)
 
       # Scale to (0, 1)
-      x_scaled <- (x_non_na - min_x) / (range_x + eps)
+      x_scaled <- (x_non_na - min_x) / (range_x + EPS)
 
       # Add artificial endpoints to help qbeta stay close to min/max
       x_scaled_fit <- c(0, 1, x_scaled)
@@ -80,7 +80,7 @@ find_best_transform <- function(x) {
 
       mean_x <- mean(x_non_na)
       sd_x   <- sd(x_non_na)
-      if (sd_x < eps) return(NULL)  # Flat data
+      if (sd_x < EPS) return(NULL)  # Flat data
 
       p_na <- mean(is.na(x))
 
@@ -112,7 +112,7 @@ find_best_transform <- function(x) {
       # Gamma requires positive values → shift if needed
       shift <- 0
       if (min(x_non_na) <= 0) {
-        shift <- abs(min(x_non_na)) + eps
+        shift <- abs(min(x_non_na)) + EPS
         x_non_na <- x_non_na + shift
       }
 
