@@ -38,15 +38,15 @@ plot_numeric_histogram_comparison <- function(org, syn, col) {
   bins <- calculate_fd_bins(df$value)
   x_breaks <- pretty(df$value, n = 10)
   # Create ggplot histogram
-  p <- ggplot(df, aes(x = value, fill = source)) +
-    geom_histogram(aes(y = ..density..), position =  position_dodge(), alpha = 1, bins = bins) +
-    scale_fill_manual(values = c("steelblue", "tomato")) +
-    scale_x_continuous(breaks = x_breaks)+
-    labs(
+  p <- ggplot2::ggplot(df, ggplot2::aes(x = value, fill = source)) +
+    ggplot2::geom_histogram(ggplot2::aes(y = ..density..), position =  ggplot2::position_dodge(), alpha = 1, bins = bins) +
+    ggplot2::scale_fill_manual(values = c("steelblue", "tomato")) +
+    ggplot2::scale_x_continuous(breaks = x_breaks)+
+    ggplot2::labs(
       title = paste0(col, ": S_pMSE = ", spmse),
       x = col, y = "Density"
     ) +
-    theme_minimal(base_size = 13)
+    ggplot2::theme_minimal(base_size = 13)
 
   return(p)
 }

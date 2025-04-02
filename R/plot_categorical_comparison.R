@@ -15,7 +15,6 @@
 #' original_data <- sample(c("A", "B", "C"), 100, replace = TRUE)
 #' synthetic_data <- sample(c("A", "B", "C"), 100, replace = TRUE)
 #' plot_categorical_comparison(original_data, synthetic_data, "Category")
-#'
 #' @keywords internal
 plot_categorical_comparison<-function(org,syn,col){
   # 1. Frequency tables
@@ -42,16 +41,16 @@ plot_categorical_comparison<-function(org,syn,col){
   spmse <- round(calculate_S_pMSE(org, syn), 3)
 
   # 6. Plot with ggplot2
-  p<-ggplot2::ggplot(plot_data, aes(x = Category, y = Proportion, fill = Group)) +
-    geom_bar(stat = "identity", position = position_dodge()) +
-    labs(
+  p<-ggplot2::ggplot(plot_data, ggplot2::aes(x = Category, y = Proportion, fill = Group)) +
+    ggplot2::geom_bar(stat = "identity", position = ggplot2::position_dodge()) +
+    ggplot2::labs(
       title = paste0(col, ": S_pMSE = ", spmse),
       y = "Proportion", x = NULL
     ) +
-    scale_fill_manual(values = c("steelblue", "tomato")) +
-    theme_minimal(base_size = 13)+
-    theme(
-      axis.text.x = element_text(angle = 45, hjust = 1)
+    ggplot2::scale_fill_manual(values = c("steelblue", "tomato")) +
+    ggplot2::theme_minimal(base_size = 13)+
+    ggplot2::theme(
+      axis.text.x = ggplot2::element_text(angle = 45, hjust = 1)
     )
 
   return(p)

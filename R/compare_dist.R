@@ -97,8 +97,8 @@ compare_dist <- function(data_model, synthetic_data) {
         readline("Press [Enter] to continue..."); if (.Platform$GUI != "RStudio") dev.new()
 
         print(plot_numeric_histogram_comparison(
-          year(data_converted_dt),
-          year(synthetic_dt),
+          lubridate::year(data_converted_dt),
+          lubridate::year(synthetic_dt),
           paste0("Year of ", col)
         ))
         readline("Press [Enter] to continue..."); if (.Platform$GUI != "RStudio") dev.new()
