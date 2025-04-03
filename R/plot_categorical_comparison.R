@@ -22,7 +22,7 @@ plot_categorical_comparison<-function(org,syn,col){
   freq_syn <- table(syn)
 
   # 2. All unique categories
-  all_levels <- union(names(freq_org), names(freq_syn))
+  all_levels <- union(levels(factor(org)), levels(factor(syn)))
 
   # 3. Fill in missing categories
   prop_org <- freq_org[all_levels] / length(org)

@@ -37,7 +37,7 @@ compare_dist <- function(data_model, synthetic_data) {
   for (j in seq_along(col_names)) {
     col <- col_names[j]
     col_type <- col_types[j]
-
+    cat('\nComparing',col, ', please wait ...')
     if (!(col_type %in% c("key", "text"))) {
 
       # Open new plot window if not in RStudio
