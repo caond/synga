@@ -36,7 +36,7 @@ plot_categorical_comparison<-function(org,syn,col){
     Group = c(rep("Original", length(all_levels)),rep("Synthetic", length(all_levels))),
     Proportion = c(as.numeric(prop_org), as.numeric(prop_syn))
   )
-
+  plot_data$Category <- factor(plot_data$Category, levels = all_levels)
   # 5. Calculate S_pMSE for title
   spmse <- round(calculate_S_pMSE(org, syn), 3)
 
@@ -48,7 +48,7 @@ plot_categorical_comparison<-function(org,syn,col){
       y = "Proportion", x = NULL
     ) +
     ggplot2::scale_fill_manual(values = c("steelblue", "tomato")) +
-    ggplot2::theme_minimal(base_size = 13)+
+    ggplot2::theme_light(base_size = 13)+
     ggplot2::theme(
       axis.text.x = ggplot2::element_text(angle = 45, hjust = 1)
     )

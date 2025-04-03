@@ -46,7 +46,7 @@ plot_numeric_histogram_comparison <- function(org, syn, col) {
       title = paste0(col, ": S_pMSE = ", spmse),
       x = col, y = "Density"
     ) +
-    ggplot2::theme_minimal(base_size = 13)
+    ggplot2::theme_light(base_size = 13)
 
   return(p)
 }
