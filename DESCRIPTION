@@ -23,7 +23,6 @@ Imports:
     parallel,
     doParallel,
     matrixcalc,
-    digest,
     pROC
 Suggests: 
     knitr,

@@ -79,7 +79,7 @@ create_model <- function(df, data_type,na.rm=FALSE) {
 
 
   # Step 3: checksum
-  checksums <- apply(data_converted, 1, function(row) digest::digest(paste(row, collapse = ""), algo = "md5"))
+  #checksums <- apply(data_converted, 1, function(row) digest::digest(paste(row, collapse = ""), algo = "md5"))
 
   # Step 4: find best distribution or empirical cumulative distribution functions (ECDF) for each column.
   transformed <- transform_model(data_converted, metadata)
@@ -96,7 +96,7 @@ create_model <- function(df, data_type,na.rm=FALSE) {
     metadata = metadata,
     data_converted = data_converted,
     transformed = transformed,
-    checksums=checksums,
+    #checksums=checksums,
     data_uniform = data_uniform
     #missing_models=missing_models,
     #na_order=na_order

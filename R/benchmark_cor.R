@@ -33,9 +33,9 @@ benchmark_cor <- function(data_model, df) {
   cor2 <- cor(df2, use = "pairwise.complete.obs")
 
   # calculating synthetic checksum
-  synthetic_checksum<-  apply(df, 1, function(row) digest::digest(paste(row, collapse = ""), algo = "md5"))
+  #synthetic_checksum<-  apply(df[,colnames(data_model$data_converted)], 1, function(row) digest::digest(paste(row, collapse = ""), algo = "md5"))
   #check if any rows in the original data are found in the synthetic
-  identical_rows<-sum(data_model$checksum %in% synthetic_checksum)
+  identical_rows<-NROW( data_model$data_converted %>% dplyr::inner_join(df))
   # Compute joint distribution metrics (e.g., Wasserstein distance, logistic AUC)
   auc <- auc_distance(df1,df2)
   frobenius <- frobenius_distance(df1,df2)
@@ -49,8 +49,10 @@ benchmark_cor <- function(data_model, df) {
   # Set up plot parameters
   par(mar = c(2, 2, 2, 2), bg = "white", mfcol = c(1, 1), cex = 0.50)
 
+  max_length_of_column_name<-max(sapply(colnames(df1),function(n)  nchar(n)))/1.9
   # Generate a heatmap to visualize correlation differences
-  heatmap(cor_diff, Rowv = NA, Colv = NA, revC = TRUE, symm = TRUE, col = rev(heat.colors(9)))
+  heatmap(cor_diff, Rowv = NA, Colv = NA, revC = TRUE, symm = TRUE, col = rev(heat.colors(9)),
+          margins=c(max_length_of_column_name,max_length_of_column_name))
 
   # Add a legend displaying min, median, and max correlation differences
   legend(
