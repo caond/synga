@@ -33,7 +33,8 @@
 #' )
 #'
 #' @export
-create_model <- function(df, data_type,na.rm=FALSE) {
+create_model <- function(df, data_type,na.rm=FALSE,n_core=1) {
+
   allowed_types <- c("factor", "date","datetime", "date", "integer", "numeric", "text", "key")
   invalid_types <- unlist(data_type)[!unlist(unlist(data_type)) %in% allowed_types]
   if (length(invalid_types) > 0) {
@@ -55,28 +56,6 @@ create_model <- function(df, data_type,na.rm=FALSE) {
 
   # Step 2: Convert data types based on the generated metadata.
   data_converted <- convert_data_types(df, metadata)
-  # missing_models <- list()
-  # if (!na.rm)
-  # {
-  #   # create missing value model to mimic missing values
-  #   na_rates <- colMeans(is.na(data_model$data_converted))
-  #   na_order <- names(sort(na_rates))
-  #   complete_rows<-complete.cases(data_model$data_converted)
-  #   data_converted_completed<-data_converted[complete_rows,]
-  #   for (col in na_order) {
-  #     na_mask <- is.na(data_model$data_converted[[col]])
-  #     if (mean(na_mask) == 0) next  # skip if fully observed
-  #
-  #     predictors <- data_converted[complete_rows, setdiff(colnames(data_model$data_converted), col)]
-  #     target <- is.na(data_model$data_converted[[col]])[complete_rows]
-  #
-  #     model <- glm(target ~ ., data = predictors, family = "binomial")
-  #     missing_models[[col]] <- model
-  #
-  #   }
-  #
-  # }
-
 
   # Step 3: checksum
   #checksums <- apply(data_converted, 1, function(row) digest::digest(paste(row, collapse = ""), algo = "md5"))
@@ -90,15 +69,17 @@ create_model <- function(df, data_type,na.rm=FALSE) {
                     col <- transformed[[col_name]]$transformed
                   }), names(transformed)))  # Assign original column names to the transformed data frame
 
+
+  rules<-detect_all_logical_rules(data_converted,n_core=1)
+
+
   # Return a structured list containing all transformation results.
   return(list(
     original = df,
     metadata = metadata,
     data_converted = data_converted,
     transformed = transformed,
-    #checksums=checksums,
+    rules=rules,
     data_uniform = data_uniform
-    #missing_models=missing_models,
-    #na_order=na_order
   ))
 }

@@ -36,7 +36,9 @@
 #' @export
 #'
 
-ensemble_ga <- function(data_model, df1, df2, GENERATIONS=1000, distance = 'frobenius') {
+ensemble_ga <- function(data_model, df1, df2, n_core) {
+  distance-'frobenius'
+  GENERATIONS=100
   POPULATION_SIZE <- 100
   EARLY_STOP_GENERATION<-10
   MUTATION_RATE <- 0.1
@@ -47,11 +49,12 @@ ensemble_ga <- function(data_model, df1, df2, GENERATIONS=1000, distance = 'frob
 
   selected_distance_function <- distance_functions[[distance]]
 
-
+  # convert into number so the distance model (eg. logistic regression can be run)
   df_n<-to_number(data_model,data_model$data_converted)
   df1_n<-to_number(data_model,df1)
   df2_n<-to_number(data_model,df2)
 
+  # we also keep the actual row id from  two synthetic data
   df1<-df1%>%mutate(id_internal_key=row_number(),source_synthetic=1)
   df2<-df2%>%mutate(id_internal_key=row_number()+N,source_synthetic=2)
 
@@ -134,7 +137,9 @@ ensemble_ga <- function(data_model, df1, df2, GENERATIONS=1000, distance = 'frob
     return(df3)
   }
 
+  # df_i= an individual population
   goodness_of_fit<-function(df_i,df1_n,df2_n){
+
     df_i_n<-rbind(
           df1_n[df_i[df_i$source_synthetic==1,'id_internal_key'],],
           df2_n[df_i[df_i$source_synthetic==2,'id_internal_key']-N,]
@@ -142,28 +147,25 @@ ensemble_ga <- function(data_model, df1, df2, GENERATIONS=1000, distance = 'frob
     selected_distance_function(df_n,df_i_n)
   }
 
-  # Selection function: choose the top N fittest individuals
 
-
-
-
-  num_cores <- parallel::detectCores() - 1  # Use all but one core
-  cl <- parallel::makeCluster(num_cores)
-  doParallel::registerDoParallel(cl)
-  cat('\nTotal cores: ',num_cores)
   population <- initialize_population()
   best_fitness <- Inf  # Initialize with a large value
   no_improvement_count <- 0  # Counter for consecutive generations with no improvement
   best_fit_idx<- 1
+
   for (gen in 1:GENERATIONS) {
     # Evaluate fitness of the population
-    fitness_scores <- foreach(individual = population, .combine = c) %dopar% {
-      goodness_of_fit(individual, df1_n = df1_n, df2_n = df2_n)
+    if (n_core>1)
+    {
+      fitness_scores <- foreach(individual = population, .combine = c) %dopar% {
+        goodness_of_fit(individual, df1_n = df1_n, df2_n = df2_n)
+      }
+    }else{
+      fitness_scores <- numeric(length(population))  # Initialize a numeric vector to store the results
+      for (i in seq_along(population)) {
+         fitness_scores[i] <- goodness_of_fit(population[[i]], df1_n = df1_n, df2_n = df2_n)
+      }
     }
-    # fitness_scores <- numeric(length(population))  # Initialize a numeric vector to store the results
-    # for (i in seq_along(population)) {
-    #   fitness_scores[i] <- goodness_of_fit(population[[i]], df1_n = df1_n, df2_n = df2_n)
-    # }
     best_fit_idx <- which.min(abs(fitness_scores - TARGET))
     current_best_fitness <- fitness_scores[best_fit_idx]
 
