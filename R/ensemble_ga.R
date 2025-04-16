@@ -37,7 +37,7 @@
 #'
 
 ensemble_ga <- function(data_model, df1, df2, n_core) {
-  distance-'frobenius'
+  distance<-'frobenius'
   GENERATIONS=100
   POPULATION_SIZE <- 100
   EARLY_STOP_GENERATION<-10
@@ -213,8 +213,6 @@ ensemble_ga <- function(data_model, df1, df2, n_core) {
     # Ensure the new population size is exactly POPULATION_SIZE
     population <- next_population[1:POPULATION_SIZE]
   }
-  # Stop the parallel cluster
-  parallel::stopCluster(cl)
 
   # Final best individual after all generations
   df_i <- population[[best_fit_idx]]

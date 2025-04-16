@@ -33,7 +33,7 @@
 #' )
 #'
 #' @export
-create_model <- function(df, data_type,na.rm=FALSE,n_core=1) {
+create_model <- function(df, data_type,na.rm=FALSE,na.rules=TRUE,n_core=1) {
 
   allowed_types <- c("factor", "date","datetime", "date", "integer", "numeric", "text", "key")
   invalid_types <- unlist(data_type)[!unlist(unlist(data_type)) %in% allowed_types]
@@ -44,6 +44,7 @@ create_model <- function(df, data_type,na.rm=FALSE,n_core=1) {
 
   if (na.rm)
   {
+    na.rules<-FALSE
     # make sure the data is complete
     df <- df[complete.cases(df), ]
   }
@@ -69,8 +70,13 @@ create_model <- function(df, data_type,na.rm=FALSE,n_core=1) {
                     col <- transformed[[col_name]]$transformed
                   }), names(transformed)))  # Assign original column names to the transformed data frame
 
+  if (na.rules)
+  {
+    rules<-detect_na_implications(data_converted,n_core)
+  }else{
+    rules<-NA
+  }
 
-  rules<-detect_all_logical_rules(data_converted,n_core=1)
 
 
   # Return a structured list containing all transformation results.

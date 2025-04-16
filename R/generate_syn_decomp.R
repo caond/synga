@@ -98,8 +98,12 @@ generate_syn_decomp <- function(data_model, n_samples = NA) {
   synthetic_uniform <- apply(synthetic_z_data, 2, pnorm)
   synthetic_uniform <- as.data.frame(synthetic_uniform)
   colnames(synthetic_uniform) <- colnames(data_uniform_reduced)
+
+  #synthetic_uniform <- apply_na_constraints_uniform(synthetic_uniform,data_model)
+
+
   synthetic_uniform_full <- cbind(synthetic_uniform, const_matrix)
   synthetic_uniform_full <- synthetic_uniform_full[, colnames(data_model$data_uniform)]
 
-  return(convert_back_original(synthetic_uniform_full))
+  return(convert_back_original(data_model,synthetic_uniform_full))
 }
